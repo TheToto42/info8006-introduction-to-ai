@@ -264,8 +264,8 @@ class PacmanGraphics:
     def update(self, newState):
         agentIndex = newState._agentMoved
         agentState = newState.agentStates[agentIndex]
-        for wallX,wallY in self.layout.blinking_walls.asList():
-            self._drawWall(newState.active_walls, WALL_COLORS[newState.active_walls[wallX][wallY]], wallX, wallY)
+        for wallX,wallY in self.layout.walls.asList():
+            self._drawWall(self.layout.walls, WALL_COLORS[newState.active_walls[wallX][wallY]], wallX, wallY)
         if self.agentImages[agentIndex][0].isPacman != agentState.isPacman:
             self.swapImages(agentIndex, agentState)
         prevState, prevImage = self.agentImages[agentIndex]

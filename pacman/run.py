@@ -4,7 +4,7 @@ from argparse import ArgumentParser, ArgumentTypeError
 
 from pacman_module.pacman import runGame
 from pacman_module.ghostAgents import GreedyGhost, SmartyGhost, DumbyGhost
-
+from pacman_module.wallAgents import StaticWaller, RandomWaller, SemiRandomWaller
 
 def restricted_float(x):
     x = float(x)
@@ -42,6 +42,11 @@ ghosts["greedy"] = GreedyGhost
 ghosts["smarty"] = SmartyGhost
 ghosts["dumby"] = DumbyGhost
 
+wallers = {}
+wallers["static"] = StaticWaller
+wallers["random"] = RandomWaller
+wallers["semirandom"] = SemiRandomWaller
+
 if __name__ == '__main__':
     usage = """
     USAGE:      python run.py <game_options> <agent_options>
@@ -68,6 +73,10 @@ if __name__ == '__main__':
         '--silentdisplay',
         help="Disable the graphical display of the game.",
         action="store_true")
+    parser.add_argument(
+        '--wallagent',
+        help="Wall agent available in the 'wallAgents' module.",
+        choices=["static","random","semirandom"])
 
     args = parser.parse_args()
 
@@ -82,8 +91,9 @@ if __name__ == '__main__':
         gagts = [gagt(i + 1) for i in range(nghosts)]
     else:
         gagts = []
+    wagt = wallers[args.wallagent](nghosts+1)
     total_score, total_computation_time, total_expanded_nodes = runGame(
-        args.layout, agent, gagts, not args.silentdisplay, expout=0)
+        args.layout, agent, gagts, wagt, not args.silentdisplay, expout=0)
 
     print("Total score : " + str(total_score))
     print("Total computation time (seconds) : " + str(total_computation_time))

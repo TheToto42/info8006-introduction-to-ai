@@ -132,10 +132,10 @@ class GameState:
             GhostRules.applyAction(state, action, agentIndex)
 
         #Wall blinking every 10 time steps
-        state.data.counter = self.data.counter + 1
-        if (state.data.counter % 20 == 0):
-            for wallX, wallY in state.data.layout.blinking_walls.asList():
-                state.data.active_walls[wallX][wallY] = not state.data.active_walls[wallX][wallY]
+        #state.data.counter = self.data.counter + 1
+        #if (state.data.counter % 20 == 0):
+        #    for wallX, wallY in state.data.layout.blinking_walls.asList():
+        #        state.data.active_walls[wallX][wallY] = not state.data.active_walls[wallX][wallY]
                 
         # Time passes
         if agentIndex == 0:
@@ -331,10 +331,11 @@ class ClassicGameRules:
             layout,
             pacmanAgent,
             ghostAgents,
+            wallAgent,
             display,
             quiet=False,
             catchExceptions=False):
-        agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
+        agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()] + [wallAgent]
         initState = GameState()
         initState.initialize(layout, len(ghostAgents))
         game = Game(agents, display, self, catchExceptions=catchExceptions)
@@ -863,6 +864,7 @@ def runGame(
         layout_name,
         pacman,
         ghosts,
+        waller,
         displayGraphics,
         expout=np.inf):
     display = graphicsDisplay.PacmanGraphics(
@@ -872,5 +874,5 @@ def runGame(
     lay = layout.getLayout(layout_name)
 
     rules = ClassicGameRules(expout)
-    game = rules.newGame(lay, pacman, ghosts, display, False, False)
+    game = rules.newGame(lay, pacman, ghosts, waller, display, False, False)
     return game.run()
