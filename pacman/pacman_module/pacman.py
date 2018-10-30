@@ -84,7 +84,9 @@ class GameState:
     # /!\ Otherwise, your project won't be graded
     countExpanded=0
     maximumExpanded = np.inf
+    
     def resetNodeExpansionCounter():
+        GameState.counter=0
         GameState.countExpanded=0
 
     def setMaximumExpanded(m):
@@ -117,9 +119,11 @@ class GameState:
         if self.isWin() or self.isLose():
             raise Exception('Can\'t generate a successor of a terminal state.')
 
+
+
         # Copy current state
         state = GameState(self)
-
+        state.data.active_walls = self.data.active_walls
         # Let agent's logic deal with its action's effects on the board
         if agentIndex == 0:  # Pacman is moving
             state.data._eaten = [False for i in range(state.getNumAgents())]
@@ -127,6 +131,12 @@ class GameState:
         else:                # A ghost is moving
             GhostRules.applyAction(state, action, agentIndex)
 
+        #Wall blinking every 10 time steps
+        state.data.counter = self.data.counter + 1
+        if (state.data.counter % 20 == 0):
+            for wallX, wallY in state.data.layout.blinking_walls.asList():
+                state.data.active_walls[wallX][wallY] = not state.data.active_walls[wallX][wallY]
+                
         # Time passes
         if agentIndex == 0:
             state.data.scoreChange += -TIME_PENALTY  # Penalty for waiting around
@@ -139,6 +149,7 @@ class GameState:
         # Book keeping
         state.data._agentMoved = agentIndex
         state.data.score += state.data.scoreChange
+        
         GameState.explored.add(self)
         GameState.explored.add(state)
         return state
@@ -267,6 +278,7 @@ class GameState:
 
     def deepCopy(self):
         state = GameState(self)
+        state.counter=0
         state.data = self.data.deepCopy()
         return state
 
@@ -290,6 +302,7 @@ class GameState:
         """
         Creates an initial game state from a layout array (see layout.py).
         """
+        self.counter = 0
         self.data.initialize(layout, numGhostAgents)
 
 ############################################################################
@@ -387,7 +400,7 @@ class PacmanRules:
         """
         return Actions.getPossibleActions(
             state.getPacmanState().configuration,
-            state.data.layout.walls)
+            state.data.active_walls)
     getLegalActions = staticmethod(getLegalActions)
 
     def applyAction(state, action):
@@ -449,7 +462,7 @@ class GhostRules:
         """
         conf = state.getGhostState(ghostIndex).configuration
         possibleActions = Actions.getPossibleActions(
-            conf, state.data.layout.walls)
+            conf, state.data.active_walls)
         reverse = Actions.reverseDirection(conf.direction)
         if Directions.STOP in possibleActions:
             possibleActions.remove(Directions.STOP)

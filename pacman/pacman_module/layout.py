@@ -30,6 +30,7 @@ class Layout:
         self.width = len(layoutText[0])
         self.height = len(layoutText)
         self.walls = Grid(self.width, self.height, False)
+        self.blinking_walls = Grid(self.width, self.height, False)
         self.food = Grid(self.width, self.height, False)
         self.capsules = []
         self.agentPositions = []
@@ -77,7 +78,7 @@ class Layout:
 
     def isWall(self, pos):
         x, col = pos
-        return self.walls[x][col]
+        return self.active_walls[x][col]
 
     def getRandomLegalPosition(self):
         x = random.choice(list(range(self.width)))
@@ -130,8 +131,10 @@ class Layout:
         self.agentPositions = [(i == 0, pos) for i, pos in self.agentPositions]
 
     def processLayoutChar(self, x, y, layoutChar):
-        if layoutChar == '%':
+        if layoutChar == '%' or layoutChar == '#':
             self.walls[x][y] = True
+            if layoutChar == '#':
+                self.blinking_walls[x][y] = True
         elif layoutChar == '.':
             self.food[x][y] = True
         elif layoutChar == 'o':

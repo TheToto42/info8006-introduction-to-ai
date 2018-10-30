@@ -42,6 +42,10 @@ GHOST_COLORS.append(formatColor(.1, .75, .7))  # Green
 GHOST_COLORS.append(formatColor(1.0, 0.6, 0.0))  # Yellow
 GHOST_COLORS.append(formatColor(.4, 0.13, 0.91))  # Purple
 
+WALL_COLORS = dict()
+WALL_COLORS[True] = formatColor(0, .3, .9) #Blue
+WALL_COLORS[False] = formatColor(.1, .75, .7) #Green
+
 TEAM_COLORS = GHOST_COLORS[:2]
 
 GHOST_SHAPE = [
@@ -260,7 +264,8 @@ class PacmanGraphics:
     def update(self, newState):
         agentIndex = newState._agentMoved
         agentState = newState.agentStates[agentIndex]
-
+        for wallX,wallY in self.layout.blinking_walls.asList():
+            self._drawWall(newState.active_walls, WALL_COLORS[newState.active_walls[wallX][wallY]], wallX, wallY)
         if self.agentImages[agentIndex][0].isPacman != agentState.isPacman:
             self.swapImages(agentIndex, agentState)
         prevState, prevImage = self.agentImages[agentIndex]
@@ -511,6 +516,215 @@ class PacmanGraphics:
         y = (self.height - y) * self.gridSize
         return (x, y)
 
+    def _drawWall(self, wallMatrix, wallColor, xNum, yNum):
+        pos = (xNum, yNum)
+        screen = self.to_screen(pos)
+        screen2 = self.to_screen2(pos)
+
+        # draw each quadrant of the square based on adjacent walls
+        wIsWall = self.isWall(xNum - 1, yNum, wallMatrix)
+        eIsWall = self.isWall(xNum + 1, yNum, wallMatrix)
+        nIsWall = self.isWall(xNum, yNum + 1, wallMatrix)
+        sIsWall = self.isWall(xNum, yNum - 1, wallMatrix)
+        nwIsWall = self.isWall(xNum - 1, yNum + 1, wallMatrix)
+        swIsWall = self.isWall(xNum - 1, yNum - 1, wallMatrix)
+        neIsWall = self.isWall(xNum + 1, yNum + 1, wallMatrix)
+        seIsWall = self.isWall(xNum + 1, yNum - 1, wallMatrix)
+
+        # NE quadrant
+        if (not nIsWall) and (not eIsWall):
+            # inner circle
+            circle(screen2, WALL_RADIUS * self.gridSize,
+                   wallColor, wallColor, (0, 91), 'arc')
+        if (nIsWall) and (not eIsWall):
+            # vertical line
+            line(add(screen,
+                     (self.gridSize * WALL_RADIUS,
+                      0)),
+                 add(screen,
+                     (self.gridSize * WALL_RADIUS,
+                      self.gridSize * (-0.5) - 1)),
+                 wallColor)
+        if (not nIsWall) and (eIsWall):
+            # horizontal line
+            line(add(screen,
+                     (0,
+                      self.gridSize * (-1) * WALL_RADIUS)),
+                 add(screen,
+                     (self.gridSize * 0.5 + 1,
+                      self.gridSize * (-1) * WALL_RADIUS)),
+                 wallColor)
+        if (nIsWall) and (eIsWall) and (not neIsWall):
+            # outer circle
+            circle(add(screen2,
+                       (self.gridSize * 2 * WALL_RADIUS,
+                        self.gridSize * (-2) * WALL_RADIUS)),
+                   WALL_RADIUS * self.gridSize - 1,
+                   wallColor,
+                   wallColor,
+                   (180,
+                    271),
+                   'arc')
+            line(add(screen,
+                     (self.gridSize * 2 * WALL_RADIUS - 1,
+                      self.gridSize * (-1) * WALL_RADIUS)),
+                 add(screen,
+                     (self.gridSize * 0.5 + 1,
+                      self.gridSize * (-1) * WALL_RADIUS)),
+                 wallColor)
+            line(add(screen,
+                     (self.gridSize * WALL_RADIUS,
+                      self.gridSize * (-2) * WALL_RADIUS + 1)),
+                 add(screen,
+                     (self.gridSize * WALL_RADIUS,
+                      self.gridSize * (-0.5))),
+                 wallColor)
+
+        # NW quadrant
+        if (not nIsWall) and (not wIsWall):
+            # inner circle
+            circle(screen2, WALL_RADIUS * self.gridSize,
+                   wallColor, wallColor, (90, 181), 'arc')
+        if (nIsWall) and (not wIsWall):
+            # vertical line
+            line(add(screen,
+                     (self.gridSize * (-1) * WALL_RADIUS,
+                      0)),
+                 add(screen,
+                     (self.gridSize * (-1) * WALL_RADIUS,
+                      self.gridSize * (-0.5) - 1)),
+                 wallColor)
+        if (not nIsWall) and (wIsWall):
+            # horizontal line
+            line(add(screen,
+                     (0,
+                      self.gridSize * (-1) * WALL_RADIUS)),
+                 add(screen,
+                     (self.gridSize * (-0.5) - 1,
+                      self.gridSize * (-1) * WALL_RADIUS)),
+                 wallColor)
+        if (nIsWall) and (wIsWall) and (not nwIsWall):
+            # outer circle
+            circle(add(screen2,
+                       (self.gridSize * (-2) * WALL_RADIUS,
+                        self.gridSize * (-2) * WALL_RADIUS)),
+                   WALL_RADIUS * self.gridSize - 1,
+                   wallColor,
+                   wallColor,
+                   (270,
+                    361),
+                   'arc')
+            line(add(screen,
+                     (self.gridSize * (-2) * WALL_RADIUS + 1,
+                      self.gridSize * (-1) * WALL_RADIUS)),
+                 add(screen,
+                     (self.gridSize * (-0.5),
+                      self.gridSize * (-1) * WALL_RADIUS)),
+                 wallColor)
+            line(add(screen,
+                     (self.gridSize * (-1) * WALL_RADIUS,
+                      self.gridSize * (-2) * WALL_RADIUS + 1)),
+                 add(screen,
+                     (self.gridSize * (-1) * WALL_RADIUS,
+                      self.gridSize * (-0.5))),
+                 wallColor)
+
+        # SE quadrant
+        if (not sIsWall) and (not eIsWall):
+            # inner circle
+            circle(screen2, WALL_RADIUS * self.gridSize,
+                   wallColor, wallColor, (270, 361), 'arc')
+        if (sIsWall) and (not eIsWall):
+            # vertical line
+            line(add(screen, (self.gridSize *
+                              WALL_RADIUS, 0)), add(screen, (self.gridSize *
+                                                             WALL_RADIUS, self.gridSize *
+                                                             (0.5) +
+                                                             1)), wallColor)
+        if (not sIsWall) and (eIsWall):
+            # horizontal line
+            line(add(screen, (0, self.gridSize *
+                              (1) *
+                              WALL_RADIUS)), add(screen, (self.gridSize *
+                                                          0.5 +
+                                                          1, self.gridSize *
+                                                          (1) *
+                                                          WALL_RADIUS)), wallColor)
+        if (sIsWall) and (eIsWall) and (not seIsWall):
+            # outer circle
+            circle(add(screen2, (self.gridSize *
+                                 2 *
+                                 WALL_RADIUS, self.gridSize *
+                                 (2) *
+                                 WALL_RADIUS)), WALL_RADIUS *
+                   self.gridSize -
+                   1, wallColor, wallColor, (90, 181), 'arc')
+            line(add(screen, (self.gridSize *
+                              2 *
+                              WALL_RADIUS -
+                              1, self.gridSize *
+                              (1) *
+                              WALL_RADIUS)), add(screen, (self.gridSize *
+                                                          0.5, self.gridSize *
+                                                          (1) *
+                                                          WALL_RADIUS)), wallColor)
+            line(add(screen, (self.gridSize *
+                              WALL_RADIUS, self.gridSize *
+                              (2) *
+                              WALL_RADIUS -
+                              1)), add(screen, (self.gridSize *
+                                                WALL_RADIUS, self.gridSize *
+                                                (0.5))), wallColor)
+
+        # SW quadrant
+        if (not sIsWall) and (not wIsWall):
+            # inner circle
+            circle(screen2, WALL_RADIUS * self.gridSize,
+                   wallColor, wallColor, (180, 271), 'arc')
+        if (sIsWall) and (not wIsWall):
+            # vertical line
+            line(add(screen,
+                     (self.gridSize * (-1) * WALL_RADIUS,
+                      0)),
+                 add(screen,
+                     (self.gridSize * (-1) * WALL_RADIUS,
+                      self.gridSize * (0.5) + 1)),
+                 wallColor)
+        if (not sIsWall) and (wIsWall):
+            # horizontal line
+            line(add(screen,
+                     (0,
+                      self.gridSize * (1) * WALL_RADIUS)),
+                 add(screen,
+                     (self.gridSize * (-0.5) - 1,
+                      self.gridSize * (1) * WALL_RADIUS)),
+                 wallColor)
+        if (sIsWall) and (wIsWall) and (not swIsWall):
+            # outer circle
+            circle(add(screen2,
+                       (self.gridSize * (-2) * WALL_RADIUS,
+                        self.gridSize * (2) * WALL_RADIUS)),
+                   WALL_RADIUS * self.gridSize - 1,
+                   wallColor,
+                   wallColor,
+                   (0,
+                    91),
+                   'arc')
+            line(add(screen,
+                     (self.gridSize * (-2) * WALL_RADIUS + 1,
+                      self.gridSize * (1) * WALL_RADIUS)),
+                 add(screen,
+                     (self.gridSize * (-0.5),
+                      self.gridSize * (1) * WALL_RADIUS)),
+                 wallColor)
+            line(add(screen,
+                     (self.gridSize * (-1) * WALL_RADIUS,
+                      self.gridSize * (2) * WALL_RADIUS - 1)),
+                 add(screen,
+                     (self.gridSize * (-1) * WALL_RADIUS,
+                      self.gridSize * (0.5))),
+                 wallColor)
+ 
     def drawWalls(self, wallMatrix):
         wallColor = WALL_COLOR
         for xNum, x in enumerate(wallMatrix):
@@ -521,213 +735,7 @@ class PacmanGraphics:
 
             for yNum, cell in enumerate(x):
                 if cell:  # There's a wall here
-                    pos = (xNum, yNum)
-                    screen = self.to_screen(pos)
-                    screen2 = self.to_screen2(pos)
-
-                    # draw each quadrant of the square based on adjacent walls
-                    wIsWall = self.isWall(xNum - 1, yNum, wallMatrix)
-                    eIsWall = self.isWall(xNum + 1, yNum, wallMatrix)
-                    nIsWall = self.isWall(xNum, yNum + 1, wallMatrix)
-                    sIsWall = self.isWall(xNum, yNum - 1, wallMatrix)
-                    nwIsWall = self.isWall(xNum - 1, yNum + 1, wallMatrix)
-                    swIsWall = self.isWall(xNum - 1, yNum - 1, wallMatrix)
-                    neIsWall = self.isWall(xNum + 1, yNum + 1, wallMatrix)
-                    seIsWall = self.isWall(xNum + 1, yNum - 1, wallMatrix)
-
-                    # NE quadrant
-                    if (not nIsWall) and (not eIsWall):
-                        # inner circle
-                        circle(screen2, WALL_RADIUS * self.gridSize,
-                               wallColor, wallColor, (0, 91), 'arc')
-                    if (nIsWall) and (not eIsWall):
-                        # vertical line
-                        line(add(screen,
-                                 (self.gridSize * WALL_RADIUS,
-                                  0)),
-                             add(screen,
-                                 (self.gridSize * WALL_RADIUS,
-                                  self.gridSize * (-0.5) - 1)),
-                             wallColor)
-                    if (not nIsWall) and (eIsWall):
-                        # horizontal line
-                        line(add(screen,
-                                 (0,
-                                  self.gridSize * (-1) * WALL_RADIUS)),
-                             add(screen,
-                                 (self.gridSize * 0.5 + 1,
-                                  self.gridSize * (-1) * WALL_RADIUS)),
-                             wallColor)
-                    if (nIsWall) and (eIsWall) and (not neIsWall):
-                        # outer circle
-                        circle(add(screen2,
-                                   (self.gridSize * 2 * WALL_RADIUS,
-                                    self.gridSize * (-2) * WALL_RADIUS)),
-                               WALL_RADIUS * self.gridSize - 1,
-                               wallColor,
-                               wallColor,
-                               (180,
-                                271),
-                               'arc')
-                        line(add(screen,
-                                 (self.gridSize * 2 * WALL_RADIUS - 1,
-                                  self.gridSize * (-1) * WALL_RADIUS)),
-                             add(screen,
-                                 (self.gridSize * 0.5 + 1,
-                                  self.gridSize * (-1) * WALL_RADIUS)),
-                             wallColor)
-                        line(add(screen,
-                                 (self.gridSize * WALL_RADIUS,
-                                  self.gridSize * (-2) * WALL_RADIUS + 1)),
-                             add(screen,
-                                 (self.gridSize * WALL_RADIUS,
-                                  self.gridSize * (-0.5))),
-                             wallColor)
-
-                    # NW quadrant
-                    if (not nIsWall) and (not wIsWall):
-                        # inner circle
-                        circle(screen2, WALL_RADIUS * self.gridSize,
-                               wallColor, wallColor, (90, 181), 'arc')
-                    if (nIsWall) and (not wIsWall):
-                        # vertical line
-                        line(add(screen,
-                                 (self.gridSize * (-1) * WALL_RADIUS,
-                                  0)),
-                             add(screen,
-                                 (self.gridSize * (-1) * WALL_RADIUS,
-                                  self.gridSize * (-0.5) - 1)),
-                             wallColor)
-                    if (not nIsWall) and (wIsWall):
-                        # horizontal line
-                        line(add(screen,
-                                 (0,
-                                  self.gridSize * (-1) * WALL_RADIUS)),
-                             add(screen,
-                                 (self.gridSize * (-0.5) - 1,
-                                  self.gridSize * (-1) * WALL_RADIUS)),
-                             wallColor)
-                    if (nIsWall) and (wIsWall) and (not nwIsWall):
-                        # outer circle
-                        circle(add(screen2,
-                                   (self.gridSize * (-2) * WALL_RADIUS,
-                                    self.gridSize * (-2) * WALL_RADIUS)),
-                               WALL_RADIUS * self.gridSize - 1,
-                               wallColor,
-                               wallColor,
-                               (270,
-                                361),
-                               'arc')
-                        line(add(screen,
-                                 (self.gridSize * (-2) * WALL_RADIUS + 1,
-                                  self.gridSize * (-1) * WALL_RADIUS)),
-                             add(screen,
-                                 (self.gridSize * (-0.5),
-                                  self.gridSize * (-1) * WALL_RADIUS)),
-                             wallColor)
-                        line(add(screen,
-                                 (self.gridSize * (-1) * WALL_RADIUS,
-                                  self.gridSize * (-2) * WALL_RADIUS + 1)),
-                             add(screen,
-                                 (self.gridSize * (-1) * WALL_RADIUS,
-                                  self.gridSize * (-0.5))),
-                             wallColor)
-
-                    # SE quadrant
-                    if (not sIsWall) and (not eIsWall):
-                        # inner circle
-                        circle(screen2, WALL_RADIUS * self.gridSize,
-                               wallColor, wallColor, (270, 361), 'arc')
-                    if (sIsWall) and (not eIsWall):
-                        # vertical line
-                        line(add(screen, (self.gridSize *
-                                          WALL_RADIUS, 0)), add(screen, (self.gridSize *
-                                                                         WALL_RADIUS, self.gridSize *
-                                                                         (0.5) +
-                                                                         1)), wallColor)
-                    if (not sIsWall) and (eIsWall):
-                        # horizontal line
-                        line(add(screen, (0, self.gridSize *
-                                          (1) *
-                                          WALL_RADIUS)), add(screen, (self.gridSize *
-                                                                      0.5 +
-                                                                      1, self.gridSize *
-                                                                      (1) *
-                                                                      WALL_RADIUS)), wallColor)
-                    if (sIsWall) and (eIsWall) and (not seIsWall):
-                        # outer circle
-                        circle(add(screen2, (self.gridSize *
-                                             2 *
-                                             WALL_RADIUS, self.gridSize *
-                                             (2) *
-                                             WALL_RADIUS)), WALL_RADIUS *
-                               self.gridSize -
-                               1, wallColor, wallColor, (90, 181), 'arc')
-                        line(add(screen, (self.gridSize *
-                                          2 *
-                                          WALL_RADIUS -
-                                          1, self.gridSize *
-                                          (1) *
-                                          WALL_RADIUS)), add(screen, (self.gridSize *
-                                                                      0.5, self.gridSize *
-                                                                      (1) *
-                                                                      WALL_RADIUS)), wallColor)
-                        line(add(screen, (self.gridSize *
-                                          WALL_RADIUS, self.gridSize *
-                                          (2) *
-                                          WALL_RADIUS -
-                                          1)), add(screen, (self.gridSize *
-                                                            WALL_RADIUS, self.gridSize *
-                                                            (0.5))), wallColor)
-
-                    # SW quadrant
-                    if (not sIsWall) and (not wIsWall):
-                        # inner circle
-                        circle(screen2, WALL_RADIUS * self.gridSize,
-                               wallColor, wallColor, (180, 271), 'arc')
-                    if (sIsWall) and (not wIsWall):
-                        # vertical line
-                        line(add(screen,
-                                 (self.gridSize * (-1) * WALL_RADIUS,
-                                  0)),
-                             add(screen,
-                                 (self.gridSize * (-1) * WALL_RADIUS,
-                                  self.gridSize * (0.5) + 1)),
-                             wallColor)
-                    if (not sIsWall) and (wIsWall):
-                        # horizontal line
-                        line(add(screen,
-                                 (0,
-                                  self.gridSize * (1) * WALL_RADIUS)),
-                             add(screen,
-                                 (self.gridSize * (-0.5) - 1,
-                                  self.gridSize * (1) * WALL_RADIUS)),
-                             wallColor)
-                    if (sIsWall) and (wIsWall) and (not swIsWall):
-                        # outer circle
-                        circle(add(screen2,
-                                   (self.gridSize * (-2) * WALL_RADIUS,
-                                    self.gridSize * (2) * WALL_RADIUS)),
-                               WALL_RADIUS * self.gridSize - 1,
-                               wallColor,
-                               wallColor,
-                               (0,
-                                91),
-                               'arc')
-                        line(add(screen,
-                                 (self.gridSize * (-2) * WALL_RADIUS + 1,
-                                  self.gridSize * (1) * WALL_RADIUS)),
-                             add(screen,
-                                 (self.gridSize * (-0.5),
-                                  self.gridSize * (1) * WALL_RADIUS)),
-                             wallColor)
-                        line(add(screen,
-                                 (self.gridSize * (-1) * WALL_RADIUS,
-                                  self.gridSize * (2) * WALL_RADIUS - 1)),
-                             add(screen,
-                                 (self.gridSize * (-1) * WALL_RADIUS,
-                                  self.gridSize * (0.5))),
-                             wallColor)
+                    self._drawWall(wallMatrix,wallColor,xNum,yNum)
 
     def isWall(self, x, y, walls):
         if x < 0 or y < 0:

@@ -26,6 +26,7 @@ import os
 import traceback
 import sys
 import pacman_module as pacmodule
+from copy import deepcopy
 
 #######################
 # Parts worth reading #
@@ -438,6 +439,8 @@ class GameStateData:
         state._foodEaten = self._foodEaten
         state._foodAdded = self._foodAdded
         state._capsuleEaten = self._capsuleEaten
+        state.active_walls = self.active_walls.deepCopy()
+        state.counter = self.counter
         return state
 
     def copyAgentStates(self, agentStates):
@@ -553,8 +556,9 @@ class GameStateData:
         self.layout = layout
         self.score = 0
         self.scoreChange = 0
-
+        self.active_walls = deepcopy(self.layout.walls)
         self.agentStates = []
+        self.counter = 0
         numGhosts = 0
         for isPacman, pos in layout.agentPositions:
             if not isPacman:
@@ -663,7 +667,6 @@ class Game:
             skip_action = False
             # Generate an observation of the state
             observation = self.state.deepCopy()
-
             # Solicit an action
             action = None
             self.mute(agentIndex)
@@ -677,6 +680,7 @@ class Game:
                 action = agent.get_action(observation)
                 if pacmodule.pacman.GameState.countExpanded > expout:
                     violated = True
+            
             totalComputationTime += (time.time() - t)
             totalExpandedNodes += pacmodule.pacman.GameState.countExpanded
             if action not in self.state.getLegalActions(agentIndex):
