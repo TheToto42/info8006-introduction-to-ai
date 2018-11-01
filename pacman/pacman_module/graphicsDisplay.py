@@ -237,13 +237,15 @@ class PacmanGraphics:
 
     def drawAgentObjects(self, state):
         self.agentImages = []  # (agentState, image)
+        self.activeSwap = False
         for index, agent in enumerate(state.agentStates):
-            if agent.isPacman:
+            if index == 0:
                 image = self.drawPacman(agent, index)
                 self.agentImages.append((agent, image))
-            else:
+            elif index <= state.numGhosts:
                 image = self.drawGhost(agent, index)
                 self.agentImages.append((agent, image))
+                self.activeSwap = True
         refresh()
 
     def swapImages(self, agentIndex, newState):
@@ -266,14 +268,16 @@ class PacmanGraphics:
         agentState = newState.agentStates[agentIndex]
         for wallX,wallY in self.layout.walls.asList():
             self._drawWall(self.layout.walls, WALL_COLORS[newState.active_walls[wallX][wallY]], wallX, wallY)
-        if self.agentImages[agentIndex][0].isPacman != agentState.isPacman:
+        if self.activeSwap and self.agentImages[agentIndex][0].isPacman != agentState.isPacman:
             self.swapImages(agentIndex, agentState)
-        prevState, prevImage = self.agentImages[agentIndex]
-        if agentState.isPacman:
+        if agentIndex == 0 or agentIndex <= newState.numGhosts:
+            prevState, prevImage = self.agentImages[agentIndex]
+            self.agentImages[agentIndex] = (agentState, prevImage)
+        if agentIndex == 0:
             self.animatePacman(agentState, prevState, prevImage)
-        else:
+        elif agentIndex <= newState.numGhosts:
             self.moveGhost(agentState, agentIndex, prevState, prevImage)
-        self.agentImages[agentIndex] = (agentState, prevImage)
+        
 
         if newState._foodEaten is not None:
             self.removeFood(newState._foodEaten, self.food)

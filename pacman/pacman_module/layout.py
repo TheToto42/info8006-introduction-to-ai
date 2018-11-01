@@ -35,6 +35,7 @@ class Layout:
         self.capsules = []
         self.agentPositions = []
         self.numGhosts = 0
+        self.numWallAgents = 0
         self.processLayoutText(layoutText)
         self.layoutText = layoutText
         self.totalFood = len(self.food.asList())
@@ -42,6 +43,9 @@ class Layout:
 
     def getNumGhosts(self):
         return self.numGhosts
+
+    def getNumWallAgents(self):
+        return self.numWallAgents
 
     def initializeVisibilityMatrix(self):
         global VISIBILITY_MATRIX_CACHE
@@ -116,6 +120,7 @@ class Layout:
         The shape of the maze.  Each character
         represents a different type of object.
          % - Wall
+         # - Blinking wall
          . - Food
          o - Capsule
          G - Ghost
@@ -128,13 +133,16 @@ class Layout:
                 layoutChar = layoutText[maxY - y][x]
                 self.processLayoutChar(x, y, layoutChar)
         self.agentPositions.sort()
-        self.agentPositions = [(i == 0, pos) for i, pos in self.agentPositions]
+        #self.agentPositions = [(i, pos) for i, pos in self.agentPositions]
+        
 
     def processLayoutChar(self, x, y, layoutChar):
         if layoutChar == '%' or layoutChar == '#':
             self.walls[x][y] = True
             if layoutChar == '#':
                 self.blinking_walls[x][y] = True
+                self.agentPositions.append((2, (x, y)))
+                self.numWallAgents += 1
         elif layoutChar == '.':
             self.food[x][y] = True
         elif layoutChar == 'o':

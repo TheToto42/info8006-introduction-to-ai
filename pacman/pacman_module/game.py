@@ -138,10 +138,11 @@ class AgentState:
     AgentStates hold the state of an agent (configuration, speed, scared, etc).
     """
 
-    def __init__(self, startConfiguration, isPacman):
+    def __init__(self, startConfiguration, idx):
         self.start = startConfiguration
         self.configuration = startConfiguration
-        self.isPacman = isPacman
+        self.idx = idx
+        self.isPacman = self.idx == 0
         self.scaredTimer = 0
         self.numCarrying = 0
         self.numReturned = 0
@@ -150,7 +151,7 @@ class AgentState:
         if self.isPacman:
             return "Pacman: " + str(self.configuration)
         else:
-            return "Ghost: " + str(self.configuration)
+            return ("Ghost: " if not isinstance(configuration.direction, bool) else "Wall: ") + str(self.configuration)
 
     def __eq__(self, other):
         if other is None:
@@ -422,6 +423,7 @@ class GameStateData:
             self.layout = prevState.layout
             self._eaten = prevState._eaten
             self.score = prevState.score
+            self.numGhosts = prevState.numGhosts
 
         self._foodEaten = None
         self._foodAdded = None
@@ -430,6 +432,7 @@ class GameStateData:
         self._lose = False
         self._win = False
         self.scoreChange = 0
+        self.numGhosts = 0
 
     def deepCopy(self):
         state = GameStateData(self)
@@ -439,8 +442,8 @@ class GameStateData:
         state._foodEaten = self._foodEaten
         state._foodAdded = self._foodAdded
         state._capsuleEaten = self._capsuleEaten
+        state.numGhosts = self.numGhosts
         state.active_walls = self.active_walls.deepCopy()
-        state.counter = self.counter
         return state
 
     def copyAgentStates(self, agentStates):
@@ -511,8 +514,10 @@ class GameStateData:
             agent_dir = agentState.configuration.direction
             if agentState.isPacman:
                 map[x][y] = self._pacStr(agent_dir)
-            else:
+            elif agentState.idx <= self.numGhosts:
                 map[x][y] = self._ghostStr(agent_dir)
+            else:
+                map[x][y] = self._bWallStr(agent_dir)
 
         for x, y in self.capsules:
             map[x][y] = 'o'
@@ -526,6 +531,10 @@ class GameStateData:
             return '%'
         else:
             return ' '
+   
+    def _bWallStr(self, idx):
+        wallX, wallY = self.layout.blinking_walls.asList()[idx - self.numGhosts - 1]
+        return '#' if self.active_walls[wallX][wallY] else ' '
 
     def _pacStr(self, dir):
         if dir == Directions.NORTH:
@@ -546,7 +555,7 @@ class GameStateData:
             return '3'
         return 'E'
 
-    def initialize(self, layout, numGhostAgents):
+    def initialize(self, layout, numGhostAgents, numWallAgents):
         """
         Creates an initial game state from a layout array (see layout.py).
         """
@@ -560,19 +569,27 @@ class GameStateData:
         self.agentStates = []
         self.counter = 0
         numGhosts = 0
-        for isPacman, pos in layout.agentPositions:
+        numWalls = 0
+        for idxAgent, pos in layout.agentPositions:
+            isPacman = idxAgent == 0
             if not isPacman:
-                if numGhosts == numGhostAgents:
+                if (idxAgent <= numGhostAgents and numGhosts == numGhostAgents) or (idxAgent > numGhostAgents and numWalls == numWallAgents):
                     continue  # Max ghosts reached already
                 else:
-                    numGhosts += 1
+                    if idxAgent >= 1 and idxAgent <= numGhostAgents:
+                        numGhosts += 1
+                    elif idxAgent > numGhostAgents and idxAgent <= numGhostAgents + numWallAgents:
+                        numWalls += 1
             self.agentStates.append(
                 AgentState(
                     Configuration(
-                        pos,
+                        pos if not(idxAgent > numGhostAgents and idxAgent <= numGhostAgents + numWallAgents) else True,
                         Directions.STOP),
                     isPacman))
-        self._eaten = [False for a in self.agentStates]
+        self.numGhosts = numGhosts
+        self.numWalls = numWalls
+        
+        self._eaten = [False for a in self.agentStates[:numGhosts+1]]
 
 
 try:
@@ -697,7 +714,6 @@ class Game:
             self.moveHistory.append((agentIndex, action))
             previous_action = action
             self.state = self.state.generateSuccessor(agentIndex, action)
-
             # Change the display
             self.display.update(self.state.data)
             ###idx = agentIndex - agentIndex % 2 + 1

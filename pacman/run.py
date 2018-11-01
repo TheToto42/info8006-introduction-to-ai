@@ -4,7 +4,7 @@ from argparse import ArgumentParser, ArgumentTypeError
 
 from pacman_module.pacman import runGame
 from pacman_module.ghostAgents import GreedyGhost, SmartyGhost, DumbyGhost
-from pacman_module.wallAgents import StaticWaller, RandomWaller, SemiRandomWaller
+from pacman_module.wallAgents import MDPWaller, SlightlyPerturbedMDPWaller, HighlyPerturbedMDPWaller
 
 def restricted_float(x):
     x = float(x)
@@ -43,9 +43,9 @@ ghosts["smarty"] = SmartyGhost
 ghosts["dumby"] = DumbyGhost
 
 wallers = {}
-wallers["static"] = StaticWaller
-wallers["random"] = RandomWaller
-wallers["semirandom"] = SemiRandomWaller
+wallers["exact"] = MDPWaller
+wallers["perturbed"] = SlightlyPerturbedMDPWaller
+wallers["hperturbed"] = HighlyPerturbedMDPWaller
 
 if __name__ == '__main__':
     usage = """
@@ -56,7 +56,6 @@ if __name__ == '__main__':
     """
 
     parser = ArgumentParser(usage)
-    parser.add_argument('--seed', help='RNG seed', type=int, default=1)
     parser.add_argument(
         '--agentfile',
         help='Python file containing a `PacmanAgent` class.',
@@ -76,7 +75,11 @@ if __name__ == '__main__':
     parser.add_argument(
         '--wallagent',
         help="Wall agent available in the 'wallAgents' module.",
-        choices=["static","random","semirandom"])
+        choices=["exact","perturbed","hperturbed"], default="exact")
+    parser.add_argument(
+        '--seed',
+        help="Seed for random number generator. Relevant if game tree is not deterministic. -1 means no fixed random seed.",
+        type=int, default=-1)
 
     args = parser.parse_args()
 
@@ -91,7 +94,7 @@ if __name__ == '__main__':
         gagts = [gagt(i + 1) for i in range(nghosts)]
     else:
         gagts = []
-    wagt = wallers[args.wallagent](nghosts+1)
+    wagt = [wallers[args.wallagent](nghosts,args.seed)]
     total_score, total_computation_time, total_expanded_nodes = runGame(
         args.layout, agent, gagts, wagt, not args.silentdisplay, expout=0)
 
