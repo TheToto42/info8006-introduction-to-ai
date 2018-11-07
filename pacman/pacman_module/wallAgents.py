@@ -27,7 +27,7 @@ class Waller(Agent):
 
 class MDPWaller(Waller):
     def get_action(self, state):
-        if state.getWallState(self.index):
+        if state.getBlinkingWallState(self.index):
             proba = 1 - self.switch_from_close_p
         else:
             proba = self.switch_from_open_p

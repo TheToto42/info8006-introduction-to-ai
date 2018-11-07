@@ -144,8 +144,8 @@ class GameState:
             GhostRules.decrementTimer(state.data.agentStates[agentIndex])
         else:
             
-            if self.getWallState(agentIndex):
-                wallX, wallY = self.getBlinkingWalls().asList()[agentIndex - self.data.numGhosts - 1]
+            if self.getBlinkingWallState(agentIndex):
+                wallX, wallY = self.getBlinkingWall().asList()[agentIndex - self.data.numGhosts - 1]
                 if state.getPacmanPosition() == (wallX,wallY):
                     PacmanRules.applyAction(state, Directions.REVERSE[state.getPacmanState().configuration.direction])
                 ghost_pos = self.getGhostPositions()
@@ -199,7 +199,7 @@ class GameState:
 
         return [(self.generateSuccessor(index, action),action) for action in self.getLegalActions(index) if action != Directions.STOP]
 
-    def generateWallSuccessors(self,index):
+    def generateBlinkingWallSuccessors(self,index):
         if (GameState.countExpanded >= GameState.maximumExpanded or index == 0):
             return None
         GameState.countExpanded += 1
@@ -215,8 +215,8 @@ class GameState:
         """
         return self.data.agentStates[0].copy()
 
-    def getWallState(self, wallIndex):
-        wallX, wallY = self.getBlinkingWalls().asList()[wallIndex - self.data.numGhosts - 1]
+    def getBlinkingWallState(self, wallIndex):
+        wallX, wallY = self.getBlinkingWall().asList()[wallIndex - self.data.numGhosts - 1]
         return self.data.active_walls[wallX][wallY]
         
 
@@ -278,17 +278,41 @@ class GameState:
         """
         return self.data.layout.walls
 
-    def getBlinkingWalls(self):
+    def isPacman(self,index):
+        """
+        Returns 'True' if agent index 'index' 
+        is Pacman (i.e., index == 0)
+        """
+        return index == 0
+
+    def isGhost(self,index):
+        """
+        Returns 'True' if agent index 'index' 
+        is a Ghost (i.e., 0 < index <= numGhosts)
+        """
+        return index > 0 and index <= self.data.numGhosts
+
+    def isBlinkingWall(self,index):
+        """
+        Returns 'True' if agent index 'index' 
+        is a Blinking Wall (i.e., numGhosts < index <= numBlinkingWalls)
+        """
+        return index > 0 and index <= self.data.numWalls
+
+    def getBlinkingWall(self):
         """
         Returns a Grid of boolean blinking wall indicator variables.
 
         Grids can be accessed via list notation, so to check
         if there is a blinking wall at (x,y), just call
 
-        bwalls = state.getBlinkingWalls()
+        bwalls = state.getBlinkingWall()
         if bwalls[x][y] == True: ...
         """
         return self.data.layout.blinking_walls
+
+    def hasActiveWall(self,x,y):
+        return self.data.active_walls[x][y]
 
     def hasFood(self, x, y):
         return self.data.food[x][y]
@@ -585,8 +609,9 @@ class WallRules:
         legal = WallRules.getLegalActions(state, wallIndex)
         if action not in legal:
             raise Exception("Illegal wall action " + str(action))
-        wallX,wallY = state.getBlinkingWalls().asList()[wallIndex-state.data.numGhosts-1]
+        wallX,wallY = state.getBlinkingWall().asList()[wallIndex-state.data.numGhosts-1]
         state.data.active_walls[wallX][wallY] = action
+        state.data.agentStates[wallIndex].configuration.direction = action
         
     applyAction = staticmethod(applyAction)  
 

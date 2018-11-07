@@ -90,13 +90,17 @@ if __name__ == '__main__':
 
     gagt = ghosts[args.ghostagent]
     nghosts = 1
+    nblinkingwalls = 1000
     if (nghosts > 0):
         gagts = [gagt(i + 1) for i in range(nghosts)]
     else:
-        gagts = []
-    wagt = [wallers[args.wallagent](nghosts,args.seed)]
+        gagts = [] 
+    if (nblinkingwalls > 0):
+        wagts = [wallers[args.wallagent](i,args.seed) for i in range(nblinkingwalls)]
+    else:
+        wagts = []
     total_score, total_computation_time, total_expanded_nodes = runGame(
-        args.layout, agent, gagts, wagt, not args.silentdisplay, expout=0)
+        args.layout, agent, gagts, wagts, not args.silentdisplay, expout=0)
 
     print("Total score : " + str(total_score))
     print("Total computation time (seconds) : " + str(total_computation_time))

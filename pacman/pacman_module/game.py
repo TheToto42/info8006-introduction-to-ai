@@ -162,7 +162,7 @@ class AgentState:
         return hash(hash(self.configuration) + 13 * hash(self.scaredTimer))
 
     def copy(self):
-        state = AgentState(self.start, self.isPacman)
+        state = AgentState(self.start, self.idx)
         state.configuration = self.configuration
         state.scaredTimer = self.scaredTimer
         state.numCarrying = self.numCarrying
@@ -517,7 +517,7 @@ class GameStateData:
             elif agentState.idx <= self.numGhosts:
                 map[x][y] = self._ghostStr(agent_dir)
             else:
-                map[x][y] = self._bWallStr(agent_dir)
+                map[x][y] = self._bWallStr(agentState.configuration.direction)
 
         for x, y in self.capsules:
             map[x][y] = 'o'
@@ -532,9 +532,9 @@ class GameStateData:
         else:
             return ' '
    
-    def _bWallStr(self, idx):
-        wallX, wallY = self.layout.blinking_walls.asList()[idx - self.numGhosts - 1]
-        return '#' if self.active_walls[wallX][wallY] else ' '
+    def _bWallStr(self, active):
+        #print(active)
+        return '#' if active else ' '
 
     def _pacStr(self, dir):
         if dir == Directions.NORTH:
@@ -583,12 +583,11 @@ class GameStateData:
             self.agentStates.append(
                 AgentState(
                     Configuration(
-                        pos if not(idxAgent > numGhostAgents and idxAgent <= numGhostAgents + numWallAgents) else True,
-                        Directions.STOP),
-                    isPacman))
+                        pos,
+                        True),
+                    idxAgent))
         self.numGhosts = numGhosts
         self.numWalls = numWalls
-        
         self._eaten = [False for a in self.agentStates[:numGhosts+1]]
 
 
