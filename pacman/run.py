@@ -4,7 +4,9 @@ from argparse import ArgumentParser, ArgumentTypeError
 
 from pacman_module.pacman import runGame
 from pacman_module.ghostAgents import GreedyGhost, SmartyGhost, DumbyGhost
-from pacman_module.wallAgents import MDPWaller, SlightlyPerturbedMDPWaller, HighlyPerturbedMDPWaller
+from pacman_module.wallAgents import MDPWaller, SlightlyPerturbedMDPWaller,\
+    HighlyPerturbedMDPWaller
+
 
 def restricted_float(x):
     x = float(x)
@@ -75,11 +77,19 @@ if __name__ == '__main__':
     parser.add_argument(
         '--wallagent',
         help="Wall agent available in the 'wallAgents' module.",
-        choices=["exact","perturbed","hperturbed"], default="exact")
+        choices=["exact", "perturbed", "hperturbed"], default="exact")
     parser.add_argument(
         '--seed',
-        help="Seed for random number generator. Relevant if game tree is not deterministic. -1 means no fixed random seed.",
-        type=int, default=-1)
+        help="Seed for random number generator.\
+             Relevant if game tree is not deterministic.\
+            -1 means no fixed random seed.",
+        type=int,
+        default=- 1)
+    parser.add_argument(
+        '--output',
+        '-o',
+        help="Output file for general performance (if not empty)",
+        default="")
 
     args = parser.parse_args()
 
@@ -94,9 +104,10 @@ if __name__ == '__main__':
     if (nghosts > 0):
         gagts = [gagt(i + 1) for i in range(nghosts)]
     else:
-        gagts = [] 
+        gagts = []
     if (nblinkingwalls > 0):
-        wagts = [wallers[args.wallagent](i,args.seed) for i in range(nblinkingwalls)]
+        wagts = [wallers[args.wallagent](i, args.seed)
+                 for i in range(nblinkingwalls)]
     else:
         wagts = []
     total_score, total_computation_time, total_expanded_nodes = runGame(
@@ -105,3 +116,12 @@ if __name__ == '__main__':
     print("Total score : " + str(total_score))
     print("Total computation time (seconds) : " + str(total_computation_time))
     print("Total expanded nodes : " + str(total_expanded_nodes))
+    if args.output != "":
+        f = open(args.output, "a+")
+        f.write(
+            str(total_score) +
+            ";" +
+            str(total_computation_time) +
+            ";" +
+            str(total_expanded_nodes) +
+            "\n")
