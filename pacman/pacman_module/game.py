@@ -433,6 +433,7 @@ class GameStateData:
         self._win = False
         self.scoreChange = 0
         self.numGhosts = 0
+        self.numWalls = 0
 
     def deepCopy(self):
         state = GameStateData(self)
@@ -443,6 +444,7 @@ class GameStateData:
         state._foodAdded = self._foodAdded
         state._capsuleEaten = self._capsuleEaten
         state.numGhosts = self.numGhosts
+        state.numWalls = self.numWalls
         state.active_walls = self.active_walls.deepCopy()
         return state
 
@@ -573,12 +575,12 @@ class GameStateData:
         for idxAgent, pos in layout.agentPositions:
             isPacman = idxAgent == 0
             if not isPacman:
-                if (idxAgent <= numGhostAgents and numGhosts == numGhostAgents) or (idxAgent > numGhostAgents and numWalls == numWallAgents):
+                if (idxAgent == 1 and numGhosts == numGhostAgents) or (idxAgent == 2 and numWalls == numWallAgents):
                     continue  # Max ghosts reached already
                 else:
-                    if idxAgent >= 1 and idxAgent <= numGhostAgents:
+                    if idxAgent == 1:
                         numGhosts += 1
-                    elif idxAgent > numGhostAgents and idxAgent <= numGhostAgents + numWallAgents:
+                    elif idxAgent == 2:
                         numWalls += 1
             self.agentStates.append(
                 AgentState(

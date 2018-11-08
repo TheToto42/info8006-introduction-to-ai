@@ -99,7 +99,7 @@ if __name__ == '__main__':
     agent = load_agent_from_file(args.agentfile)(args)
 
     gagt = ghosts[args.ghostagent]
-    nghosts = 1
+    nghosts = 1000
     nblinkingwalls = 1000
     if (nghosts > 0):
         gagts = [gagt(i + 1) for i in range(nghosts)]

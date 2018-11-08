@@ -268,9 +268,9 @@ class PacmanGraphics:
         agentState = newState.agentStates[agentIndex]
         for wallX,wallY in self.layout.walls.asList():
             self._drawWall(self.layout.walls, WALL_COLORS[newState.active_walls[wallX][wallY]], wallX, wallY)
-        if self.activeSwap and self.agentImages[agentIndex][0].isPacman != agentState.isPacman:
+        if self.activeSwap and agentState.idx != 2 and self.agentImages[agentIndex][0].isPacman != agentState.idx:
             self.swapImages(agentIndex, agentState)
-        if agentIndex == 0 or agentIndex <= newState.numGhosts:
+        if agentState.idx != 2:
             prevState, prevImage = self.agentImages[agentIndex]
             self.agentImages[agentIndex] = (agentState, prevImage)
         if agentIndex == 0:

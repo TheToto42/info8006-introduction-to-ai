@@ -108,10 +108,12 @@ class GameState:
 
         if agentIndex == 0:  # Pacman is moving
             return PacmanRules.getLegalActions(self)
-        elif agentIndex <= self.data.numGhosts:
+        elif self.isGhost(agentIndex):
             return GhostRules.getLegalActions(self, agentIndex)
-        else:
+        elif self.isBlinkingWall(agentIndex):
             return WallRules.getLegalActions(self,agentIndex)
+
+        return []
 
     def generateSuccessor(self, agentIndex, action):
         """
@@ -131,27 +133,30 @@ class GameState:
         if agentIndex == 0:  # Pacman is moving
             state.data._eaten = [False for i in range(state.getNumAgents())]
             PacmanRules.applyAction(state, action)
-        elif agentIndex <= self.data.numGhosts:                # A ghost is moving
+        elif self.isGhost(agentIndex):                # A ghost is moving
             GhostRules.applyAction(state, action, agentIndex)
-        else: #A wall is toggled or not
+        elif self.isBlinkingWall(agentIndex): #A wall is toggled or not
             WallRules.applyAction(state,action, agentIndex)
         
                 
         # Time passes
         if agentIndex == 0:
             state.data.scoreChange += -TIME_PENALTY  # Penalty for waiting around
-        elif agentIndex <= self.data.numGhosts:
+        elif self.isGhost(agentIndex):
             GhostRules.decrementTimer(state.data.agentStates[agentIndex])
-        else:
+        elif self.isBlinkingWall(agentIndex):
             
             if self.getBlinkingWallState(agentIndex):
-                wallX, wallY = self.getBlinkingWall().asList()[agentIndex - self.data.numGhosts - 1]
+                wallX, wallY = self.data.agentStates[agentIndex-1].configuration.pos
+                wallX, wallY = int(wallX), int(wallY)
                 if state.getPacmanPosition() == (wallX,wallY):
                     PacmanRules.applyAction(state, Directions.REVERSE[state.getPacmanState().configuration.direction])
-                ghost_pos = self.getGhostPositions()
-                for i in range(len(ghost_pos)):
-                    if ghost_pos[i] == (wallX,wallY):
-                        GhostRules.applyAction(state, Directions.REVERSE[state.getGhostState(i+1).configuration.direction],i+1)
+                agentStates = self.data.agentStates
+                i=1
+                for a in agentStates[1:]:
+                    if self.isGhost(i) and a.configuration.pos == (wallX,wallY):
+                        GhostRules.applyAction(state, Directions.REVERSE[a.configuration.direction],i,legalHalfTurn=True)
+                    i += 1
         
 
         
@@ -216,23 +221,24 @@ class GameState:
         return self.data.agentStates[0].copy()
 
     def getBlinkingWallState(self, wallIndex):
-        wallX, wallY = self.getBlinkingWall().asList()[wallIndex - self.data.numGhosts - 1]
-        return self.data.active_walls[wallX][wallY]
+        
+        wallX, wallY = self.data.agentStates[wallIndex-1].configuration.pos
+        return self.data.active_walls[int(wallX)][int(wallY)]
         
 
     def getPacmanPosition(self):
         return self.data.agentStates[0].getPosition()
 
     def getGhostStates(self):
-        return self.data.agentStates[1:self.data.numGhosts]
+        return list(filter(lambda x : x.idx == 1, self.data.agentStates))
 
     def getGhostState(self, agentIndex):
-        if agentIndex == 0 or agentIndex > self.data.numGhosts:
+        if not self.isGhost(agentIndex):
             raise Exception("Invalid index passed to getGhostState")
         return self.data.agentStates[agentIndex]
 
     def getGhostPosition(self, agentIndex):
-        if agentIndex == 0:
+        if not self.isGhost(agentIndex):
             raise Exception("Pacman's index passed to getGhostPosition")
         return self.data.agentStates[agentIndex].getPosition()
 
@@ -290,14 +296,14 @@ class GameState:
         Returns 'True' if agent index 'index' 
         is a Ghost (i.e., 0 < index <= numGhosts)
         """
-        return index > 0 and index <= self.data.numGhosts
+        return self.data.agentStates[index].idx == 1
 
     def isBlinkingWall(self,index):
         """
         Returns 'True' if agent index 'index' 
         is a Blinking Wall (i.e., numGhosts < index <= numBlinkingWalls)
         """
-        return index > 0 and index <= self.data.numWalls
+        return self.data.agentStates[index].idx == 2
 
     def getBlinkingWall(self):
         """
@@ -518,7 +524,7 @@ class GhostRules:
     """
     GHOST_SPEED = 1.0
 
-    def getLegalActions(state, ghostIndex):
+    def getLegalActions(state, ghostIndex, legalHalfTurn=False):
         """
         Ghosts cannot stop, and cannot turn around unless they
         reach a dead end, but can turn 90 degrees at intersections.
@@ -529,14 +535,14 @@ class GhostRules:
         reverse = Actions.reverseDirection(conf.direction)
         if Directions.STOP in possibleActions:
             possibleActions.remove(Directions.STOP)
-        if reverse in possibleActions and len(possibleActions) > 1:
+        if not legalHalfTurn and reverse in possibleActions and len(possibleActions) > 1:
             possibleActions.remove(reverse)
         return possibleActions
     getLegalActions = staticmethod(getLegalActions)
 
-    def applyAction(state, action, ghostIndex):
+    def applyAction(state, action, ghostIndex, legalHalfTurn=False):
 
-        legal = GhostRules.getLegalActions(state, ghostIndex)
+        legal = GhostRules.getLegalActions(state, ghostIndex, legalHalfTurn)
         if action not in legal:
             raise Exception("Illegal ghost action " + str(action))
 
@@ -565,7 +571,7 @@ class GhostRules:
                 ghostPosition = ghostState.configuration.getPosition()
                 if GhostRules.canKill(pacmanPosition, ghostPosition):
                     GhostRules.collide(state, ghostState, index)
-        elif agentIndex <= state.data.numGhosts:
+        elif state.isGhost(agentIndex):
             ghostState = state.data.agentStates[agentIndex]
             ghostPosition = ghostState.configuration.getPosition()
             if GhostRules.canKill(pacmanPosition, ghostPosition):
